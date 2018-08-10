@@ -35,10 +35,10 @@ def read_all(city_list, path_city_day, path_weather_forecast):
                          path_city_day=path_city_day,
                          path_weather_forecast=path_weather_forecast,
                          begin_train_day=datetime.datetime.strftime(datetime.date(2017, 4, 1), '%Y-%m-%d'),
-                         end_train_day=datetime.datetime.strftime(datetime.date(2018, 6, 19), '%Y-%m-%d'),
-                         begin_val_day=datetime.datetime.strftime(datetime.date(2018, 6, 20), '%Y-%m-%d'),
-                         end_val_day=datetime.datetime.strftime(datetime.date(2018, 7, 1), '%Y-%m-%d'),
-                         begin_infer_day=datetime.datetime.strftime(datetime.date(2018, 7, 2), '%Y-%m-%d'))
+                         end_train_day=datetime.datetime.strftime(datetime.date(2018, 7, 4), '%Y-%m-%d'),
+                         begin_val_day=datetime.datetime.strftime(datetime.date(2018, 7, 5), '%Y-%m-%d'),
+                         end_val_day=datetime.datetime.strftime(datetime.date(2018, 7, 26), '%Y-%m-%d'),
+                         begin_infer_day=datetime.datetime.strftime(datetime.date(2018, 7, 27), '%Y-%m-%d'))
     return gen_feas.gen_whole_data(2)
 
 @numba.jit(nopython=True)
@@ -86,7 +86,7 @@ def normalize(values: np.ndarray):
     return (values - values.mean()) / np.std(values)
 
 def run(city_path='/nfs/isolation_project/intern/project/lihaocheng/city_forcast/city_day_features_to_yesterday.gbk.csv', 
-        weafor_path = '/nfs/isolation_project/intern/project/lihaocheng/city_forcast/weather_forecast_0702_0708.csv',
+        weafor_path = '/nfs/isolation_project/intern/project/lihaocheng/city_forcast/weather_forecast.csv',
         datadir='data',
         city_large = True, **args):
 
@@ -158,12 +158,13 @@ def run(city_path='/nfs/isolation_project/intern/project/lihaocheng/city_forcast
         val_y.append(per_city[val_y_origin.columns].apply(lambda x : np.log(x + 1)))
     
     # Make infer features
-    infer_total = pd.concat([infer_x.drop(['city_id'], axis=1), infer_y_origin], axis=1)
+    infer_x = infer_x.drop(['city_id'], axis=1)
+    infer_total = pd.concat([infer_x, infer_y_origin], axis=1)
     infer_features = list()
     infer_y = list()
     for city in city_list:
         per_city = infer_total[infer_total['city_id'] == city]
-        infer_features.append(per_city.loc[:, infer_x.columns != 'city_id'].values)  
+        infer_features.append(per_city[infer_x.columns].values)  
         infer_y.append(per_city[infer_y_origin.columns].apply(lambda x : np.log(x + 1)))
 
     # Make time-dependent features
@@ -193,20 +194,20 @@ def run(city_path='/nfs/isolation_project/intern/project/lihaocheng/city_forcast
         val_dow=val_dow,
         infer_dow=infer_dow,
         
-        train_y=[df['online_time'] for df in train_y],
-        val_y=[df['online_time'] for df in val_y],
-        infer_y=[df['online_time'] for df in infer_y],
+        train_y=[df['total_no_call_order_cnt'] for df in train_y],
+        val_y=[df['total_no_call_order_cnt'] for df in val_y],
+        infer_y=[df['total_no_call_order_cnt'] for df in infer_y],
         
         train_time=train_features[0].shape[0],
         val_time=val_features[0].shape[0],
         infer_time=infer_features[0].shape[0],
         
-        month_autocorr=month_autocorr['online_time'],
-        week_autocorr=week_autocorr['online_time'],
+        month_autocorr=month_autocorr['total_no_call_order_cnt'],
+        week_autocorr=week_autocorr['total_no_call_order_cnt'],
         
         cities=np.arange(len(city_list)),
-        mean=[per['online_time'] for per in y_mean],
-        std=[per['online_time'] for per in y_std]
+        mean=[per['total_no_call_order_cnt'] for per in y_mean],
+        std=[per['total_no_call_order_cnt'] for per in y_std]
     )
     plain = dict(
     )

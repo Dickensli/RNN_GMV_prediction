@@ -4,7 +4,7 @@ import re
 # Manually selected params
 params_s32 = dict(
     batch_size=20,
-    train_window=8,
+    train_window=22,
     train_skip_first=0,
     embedding_size=32,
     rnn_depth=32,

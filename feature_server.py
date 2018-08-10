@@ -28,6 +28,9 @@ class FeatureServer:
         
 
         self.whole_data = whole.loc[whole.city_id.isin(city)]
+        replace = self.whole_data[pd.to_datetime(self.whole_data.stat_date) == pd.to_datetime(begin_infer_day)].copy()
+        self.whole_data = self.whole_data.loc[pd.to_datetime(self.whole_data.stat_date) <= pd.to_datetime(begin_infer_day)]
+        '''
         self.whole_data = self.whole_data.loc[pd.to_datetime(self.whole_data.stat_date) <= pd.to_datetime(end_val_day)]
 
         # replace infer_day's weather feature with weather_forecast
@@ -37,8 +40,8 @@ class FeatureServer:
 
         # replace = self.whole_data[self.whole_data['stat_date'] == end_val_day].copy()
         # fix a specific day
-        replace = self.whole_data[pd.to_datetime(self.whole_data.stat_date) == pd.to_datetime('2018-03-22')].copy()
-        replace.stat_date = self.begin_infer_day
+        # replace = self.whole_data[pd.to_datetime(self.whole_data.stat_date) == pd.to_datetime(end_val_day)].copy()
+        # replace.stat_date = self.begin_infer_day
 
         a = set(replace.columns.tolist())
         b = set(weather_forecast.columns.tolist())
@@ -58,7 +61,7 @@ class FeatureServer:
         """
 
         self.whole_data = self.whole_data.append(replace, ignore_index=True)
-
+        '''
 
     # delete holiday, before holiday 1, after holiday 1
     def _exclude_festival(self):
@@ -107,36 +110,20 @@ class FeatureServer:
                        'temperature_high']
         """
         day_weather = ['temperature',
-                       'temperature_square', 'wind_speed', 'temperature_low',
-                       'temperature_high']
+               'temperature_square', 'wind_speed', 'temperature_low',
+               'temperature_high']
         # rain_intensity in a whole day
         rain = []
         hour_weather_intens = ['intensity_0' + str(i) for i in range(0, 10)] + \
                               ['intensity_' + str(i) for i in range(10, 24)]
 
-        """
-        rain_var = ['quarter_weather_intens1', 'quarter_weather_intens2',
-                    'quarter_weather_intens3', 'quarter_weather_intens4',
-                    'quarter_weather_intens5', 'quarter_weather_intens6',
-                    'quarter_weather_intens7', 'quarter_weather_intens8']
-
-        data[rain_var[0]] = data[hour_weather_intens[0:6]].sum(axis=1)
-        data[rain_var[1]] = data[hour_weather_intens[6:8]].sum(axis=1)
-        data[rain_var[2]] = data[hour_weather_intens[8:10]].sum(axis=1)
-        data[rain_var[3]] = data[hour_weather_intens[10:12]].sum(axis=1)
-        data[rain_var[4]] = data[hour_weather_intens[12:17]].sum(axis=1)
-        data[rain_var[5]] = data[hour_weather_intens[17:20]].sum(axis=1)
-        data[rain_var[6]] = data[hour_weather_intens[20:22]].sum(axis=1)
-        data[rain_var[7]] = data[hour_weather_intens[22:24]].sum(axis=1)
-        rain.extend(rain_var)
-        """
-
         rain_var = ['quarter_rainintens_morning', 'quarter_rainintens_noon',
-                    'quarter_rainintens_night']
+                    'quarter_rainintens_afternoon', 'quarter_rainintens_night']
         
-        data[rain_var[0]] = data[hour_weather_intens[6:10]].sum(axis=1)
-        data[rain_var[1]] = data[hour_weather_intens[11:13]].sum(axis=1)
-        data[rain_var[2]] = data[hour_weather_intens[17:23]].sum(axis=1)
+        data[rain_var[0]] = data[hour_weather_intens[6:11]].sum(axis=1)
+        data[rain_var[1]] = data[hour_weather_intens[11:14]].sum(axis=1)
+        data[rain_var[2]] = data[hour_weather_intens[14:17]].sum(axis=1)
+        data[rain_var[3]] = data[hour_weather_intens[17:23]].sum(axis=1)
         
         discretize_num = 3
         discretize_rate = 1.0 / discretize_num
@@ -163,6 +150,7 @@ class FeatureServer:
                 discretize_rain_var.append(item + str(times))
             discretize_rain_var.append(item + 'no_rain')
 
+        '''
         hour_threshold = 0.25
         discretize_num = 3
         discretize_rate = 1.0 / discretize_num
@@ -184,16 +172,16 @@ class FeatureServer:
                 data['rain_hour_cnt'  + str(times)] = data.groupby('city_id')[item].apply(lambda x: 1 * (
                     (x <= _gen_hour(x, discretize_rate*(times+1))) & ( x>=_gen_hour(x, discretize_rate*times))))
             discretize_rain_var.append('rain_hour_cnt' + str(times))
-        discretize_rain_var.append('rain_hour_cnt_no_rain') 
-
+        discretize_rain_var.append('rain_hour_cnt_no_rain')
+        '''
         rain.extend(discretize_rain_var)
         
-       
+        #rain = []
 
-        weather_cond = ['clear_morning', 'clear_noon', 'clear_night',
-                        'partly_morning', 'partly_noon', 'partly_night',
-                        'cloudy_morning', 'cloudy_noon', 'cloudy_night',
-                        'rain_morning', 'rain_noon', 'rain_night']
+        weather_cond = ['clear_morning', 'clear_noon',  'clear_afternoon', 'clear_night',
+                        'partly_morning', 'partly_noon', 'partly_afternoon', 'partly_night',
+                        'cloudy_morning', 'cloudy_noon', 'cloudy_afternoon', 'cloudy_night',
+                        'rain_morning', 'rain_noon', 'rain_afternoon', 'rain_night']
         clear_cols = ['hour_skycon_' + str(i) + '_CLEAR' for i in range(24)]
         partly_cols = ['hour_skycon_' + str(i) + '_PARTLY' for i in range(24)]
         cloudy_clos = ['hour_skycon_' + str(i) + '_CLOUDY' for i in range(24)]
@@ -201,22 +189,24 @@ class FeatureServer:
 
 
         data['clear_morning'] = data[clear_cols[6:11]].sum(axis=1)
-        data['clear_noon'] = data[clear_cols[11:13]].sum(axis=1)
+        data['clear_noon'] = data[clear_cols[11:14]].sum(axis=1)
+        data['clear_afternoon'] = data[clear_cols[14:17]].sum(axis=1)
         data['clear_night'] = data[clear_cols[17:23]].sum(axis=1)
 
         data['partly_morning'] = data[partly_cols[6:11]].sum(axis=1)
-        data['partly_noon'] = data[partly_cols[11:13]].sum(axis=1)
+        data['partly_noon'] = data[partly_cols[11:14]].sum(axis=1)
+        data['partly_afternoon'] = data[partly_cols[14:17]].sum(axis=1)
         data['partly_night'] = data[partly_cols[17:23]].sum(axis=1)
 
         data['cloudy_morning'] = data[cloudy_clos[6:11]].sum(axis=1)
-        data['cloudy_noon'] = data[cloudy_clos[11:13]].sum(axis=1)
+        data['cloudy_noon'] = data[cloudy_clos[11:14]].sum(axis=1)
+        data['cloudy_afternoon'] = data[cloudy_clos[14:17]].sum(axis=1)
         data['cloudy_night'] = data[cloudy_clos[17:23]].sum(axis=1)
 
         data['rain_morning'] = data[rain_cols[6:11]].sum(axis=1)
-        data['rain_noon'] = data[rain_cols[11:13]].sum(axis=1)
+        data['rain_noon'] = data[rain_cols[11:14]].sum(axis=1)
+        data['rain_afternoon'] = data[rain_cols[14:17]].sum(axis=1)
         data['rain_night'] = data[rain_cols[17:23]].sum(axis=1)
-
-
 
 
         # price, subsidy

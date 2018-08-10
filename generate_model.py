@@ -11,7 +11,7 @@ if __name__ == '__main__':
                         default='/nfs/isolation_project/intern/project/lihaocheng/city_forcast/city_day_features_to_yesterday.gbk.csv'
                         , help='Path that stores the city data')
     parser.add_argument('--weafor_path',
-                        default='/nfs/isolation_project/intern/project/lihaocheng/city_forcast/weather_forecast_0702_0708.csv'
+                        default='/nfs/isolation_project/intern/project/lihaocheng/city_forcast/weather_forecast.csv'
                         , help='Path that stores the weather forecast')
     parser.add_argument('--city_large', default=False, action='store_true', help='Whether to use large cities only')    
     

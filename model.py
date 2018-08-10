@@ -56,7 +56,6 @@ def calc_smape_rounded(true, predicted, weights):
     smape = tf.where(zeros, tf.zeros_like(summ, dtype=tf.float32), raw_smape)
     return tf.reduce_sum(smape * weights) / n_valid
 
-
 def smape_loss(true, predicted, weights):
     """
     Differentiable SMAPE loss
@@ -69,6 +68,21 @@ def smape_loss(true, predicted, weights):
     true_o = tf.expm1(true)
     pred_o = tf.expm1(predicted)
     summ = tf.maximum(tf.abs(true_o) + tf.abs(pred_o) + epsilon, 0.5 + epsilon)
+    smape = tf.abs(pred_o - true_o) / summ * 2.0
+    return tf.losses.compute_weighted_loss(smape, weights, loss_collection=None)
+
+def mape_loss(true, predicted, weights):
+    """
+    Differentiable MAPE loss
+    :param true: Truth values
+    :param predicted: Predicted values
+    :param weights: Weights mask to exclude some values
+    :return:
+    """
+    epsilon = 0.1  # Smoothing factor, helps SMAPE to be well-behaved near zero
+    true_o = tf.expm1(true)
+    pred_o = tf.expm1(predicted)
+    summ = tf.maximum(tf.abs(true_o) + epsilon, 0.5 + epsilon)
     smape = tf.abs(pred_o - true_o) / summ * 2.0
     return tf.losses.compute_weighted_loss(smape, weights, loss_collection=None)
 
@@ -88,7 +102,7 @@ def calc_loss(prediction, true_y, additional_mask=None):
         weights = weights * tf.expand_dims(additional_mask, axis=0)
 
     mae_loss = tf.losses.absolute_difference(labels=true_y, predictions=prediction, weights=weights)
-    return mae_loss, smape_loss(true_y, prediction, weights), calc_smape_rounded(true_y, prediction, weights), tf.size(true_y)
+    return mae_loss, mape_loss(true_y, prediction, weights), smape_loss(true_y, prediction, weights), calc_smape_rounded(true_y, prediction, weights), tf.size(true_y)
 
 def make_train_op(loss, ema_decay=None, prefix=None):
     optimizer = COCOB()
@@ -205,13 +219,13 @@ class Model:
                 self.ema.apply(ema_vars)
         else:
             if is_train:
-                self.mae, smape_loss, self.smape, self.loss_item_count = calc_loss(self.prediction, inp.true_y, additional_mask=loss_mask)
+                self.mae, mape_loss, smape_loss, self.smape, self.loss_item_count = calc_loss(self.prediction, inp.true_y, additional_mask=loss_mask)
                 # Sum all losses
                 # total_loss = smape_loss + enc_stab_loss + enc_activation_loss
                 total_loss = self.mae
                 self.train_op, self.glob_norm, self.ema = make_train_op(total_loss, asgd_decay, prefix=graph_prefix)
             else:
-                self.mae, smape_loss, self.smape, self.loss_item_count = calc_loss(self.prediction[:, -1], inp.true_y[:, -1], additional_mask=None)
+                self.mae, mape_loss, smape_loss, self.smape, self.loss_item_count = calc_loss(self.prediction[:, -1], inp.true_y[:, -1], additional_mask=None)
 
                 
     def default_init(self, seed_add=0):
