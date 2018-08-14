@@ -14,6 +14,7 @@ if __name__ == '__main__':
                         default='/nfs/isolation_project/intern/project/lihaocheng/city_forcast/weather_forecast.csv'
                         , help='Path that stores the weather forecast')
     parser.add_argument('--city_large', default=False, action='store_true', help='Whether to use large cities only')    
+    parser.add_argument('--city_predict', default=False, action='store_true', help='Whether to predict 30 cities')    
     
     # Train the model
     parser.add_argument('--name', default='s32', help='Model name to identify different logs/checkpoints')
@@ -44,6 +45,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     param_dict = dict(vars(args))
+    param_dict['city_list'] = sorted(list(set(range(1, 357)) - {31, 181, 204, 205, 236, 237, 238, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 316}))
+    if args.city_large:
+        param_dict['city_list'] = sorted(list({1,  2,   3,   4,   5,   6,   7,   8,   9,  10,  12,  13,  14,
+              15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  28, 29,
+              32,  33,  34,  35,  36,  38,  39,  41,  44,  45,  46,  47,  48,
+              50,  53,  58,  62,  63,  81,  82,  83,  84,  85,  86,  87,  88,
+              89,  90,  92, 102, 105, 106, 118, 132, 133, 134, 135, 138, 142, 143,
+              145, 153, 154, 157, 158, 159, 160, 173, 283} - {4, 11, 31}))
+    if args.city_predict:
+        param_dict['city_list'] = [2,3,5,6,7,9,10,15,16,21,22,23,25,26,28,29,32,34,35,36,38,39,41,50,53,63,105,118,134, 283]
     run(**param_dict)
     param_dict['hparams'] = build_from_set(args.hparam_set)
     del param_dict['hparam_set']

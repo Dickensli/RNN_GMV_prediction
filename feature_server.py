@@ -29,8 +29,8 @@ class FeatureServer:
 
         self.whole_data = whole.loc[whole.city_id.isin(city)]
         replace = self.whole_data[pd.to_datetime(self.whole_data.stat_date) == pd.to_datetime(begin_infer_day)].copy()
-        self.whole_data = self.whole_data.loc[pd.to_datetime(self.whole_data.stat_date) <= pd.to_datetime(begin_infer_day)]
-        '''
+        #self.whole_data = self.whole_data.loc[pd.to_datetime(self.whole_data.stat_date) <= pd.to_datetime(begin_infer_day)]
+        
         self.whole_data = self.whole_data.loc[pd.to_datetime(self.whole_data.stat_date) <= pd.to_datetime(end_val_day)]
 
         # replace infer_day's weather feature with weather_forecast
@@ -59,9 +59,9 @@ class FeatureServer:
         print ('++++++++++ replace +++++++++++++')
         print (replace)
         """
-
+        
         self.whole_data = self.whole_data.append(replace, ignore_index=True)
-        '''
+        
 
     # delete holiday, before holiday 1, after holiday 1
     def _exclude_festival(self):
@@ -112,6 +112,7 @@ class FeatureServer:
         day_weather = ['temperature',
                'temperature_square', 'wind_speed', 'temperature_low',
                'temperature_high']
+        
         # rain_intensity in a whole day
         rain = []
         hour_weather_intens = ['intensity_0' + str(i) for i in range(0, 10)] + \
@@ -149,7 +150,6 @@ class FeatureServer:
                         (x <= _gen_value(x, discretize_rate*(times+1))) & ( x>=_gen_value(x, discretize_rate*times))))
                 discretize_rain_var.append(item + str(times))
             discretize_rain_var.append(item + 'no_rain')
-
         '''
         hour_threshold = 0.25
         discretize_num = 3
@@ -173,10 +173,10 @@ class FeatureServer:
                     (x <= _gen_hour(x, discretize_rate*(times+1))) & ( x>=_gen_hour(x, discretize_rate*times))))
             discretize_rain_var.append('rain_hour_cnt' + str(times))
         discretize_rain_var.append('rain_hour_cnt_no_rain')
-        '''
-        rain.extend(discretize_rain_var)
         
-        #rain = []
+        rain.extend(discretize_rain_var)
+        '''
+        # rain = []
 
         weather_cond = ['clear_morning', 'clear_noon',  'clear_afternoon', 'clear_night',
                         'partly_morning', 'partly_noon', 'partly_afternoon', 'partly_night',
@@ -408,7 +408,7 @@ class FeatureServer:
 
         idx = 0
         city_map = {}
-        for city_id in set(self.city):
+        for city_id in sorted(list(set(self.city))):
             city_map[city_id] = idx
             idx += 1
 
@@ -548,6 +548,6 @@ class FeatureServer:
                 [val_x, val_embed_weekday, val_embed_month,
                 val_embed_city, val_real_city, val_y],\
                 [infer_x, infer_embed_weekday, infer_embed_month,
-                infer_embed_city, infer_city_map, infer_y], city_max, city_min, train_mean, train_std
+                infer_embed_city, infer_city_map, infer_y], city_map, city_max, city_min, train_mean, train_std
 
 

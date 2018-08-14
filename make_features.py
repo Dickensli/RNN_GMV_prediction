@@ -88,18 +88,10 @@ def normalize(values: np.ndarray):
 def run(city_path='/nfs/isolation_project/intern/project/lihaocheng/city_forcast/city_day_features_to_yesterday.gbk.csv', 
         weafor_path = '/nfs/isolation_project/intern/project/lihaocheng/city_forcast/weather_forecast.csv',
         datadir='data',
-        city_large = True, **args):
+        city_list = None, 
+        **args):
 
-    start_time = time.time()
-    city_list = set(range(1, 357)) - {31, 181, 204, 205, 236, 237, 238, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 316}
-    if city_large:
-        city_list = {1,  2,   3,   4,   5,   6,   7,   8,   9,  10,  12,  13,  14,
-              15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  29,
-              32,  33,  34,  35,  36,  38,  39,  41,  44,  45,  46,  47,  48,
-              50,  53,  58,  62,  63,  81,  82,  83,  84,  85,  86,  87,  88,
-              89,  90,  92, 102, 105, 106, 132, 133, 134, 135, 138, 142, 143,
-              145, 153, 154, 157, 158, 159, 160, 173} - {4, 11, 31}
-    
+    start_time = time.time()    
     # Get the data
     [train_x, train_embed_weekday, train_embed_month,
      train_embed_city, train_real_city, train_y_origin],\
@@ -107,7 +99,7 @@ def run(city_path='/nfs/isolation_project/intern/project/lihaocheng/city_forcast
      val_embed_city, val_real_city, val_y_origin],\
     [infer_x, infer_embed_weekday, infer_embed_month,
      infer_embed_city, infer_city_map, infer_y_origin],\
-    city_max, city_min, train_mean, train_std = read_all(city_list, city_path, weafor_path)
+    city_map, city_max, city_min, train_mean, train_std = read_all(city_list, city_path, weafor_path)
     
     log.debug("complete generating df_cpu_max and df_cpu_num, time elapse = %S", time.time() - start_time)
    
@@ -205,7 +197,7 @@ def run(city_path='/nfs/isolation_project/intern/project/lihaocheng/city_forcast
         month_autocorr=month_autocorr['total_no_call_order_cnt'],
         week_autocorr=week_autocorr['total_no_call_order_cnt'],
         
-        cities=np.arange(len(city_list)),
+        cities=np.array([city_map[city] for city in city_list]),
         mean=[per['total_no_call_order_cnt'] for per in y_mean],
         std=[per['total_no_call_order_cnt'] for per in y_std]
     )
@@ -214,4 +206,7 @@ def run(city_path='/nfs/isolation_project/intern/project/lihaocheng/city_forcast
 
     # Store data to the disk
     VarFeeder(os.path.join(datadir, 'vars'), tensors, plain)
-    
+    with open(os.path.join(datadir, 'city_map.pickle'), 'wb') as handle:
+        pkl.dump(city_map, handle, protocol=pkl.HIGHEST_PROTOCOL)
+        
+    infer_y_origin.to_pickle(os.path.join(datadir, 'infer_y.pickle'))

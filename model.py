@@ -102,7 +102,8 @@ def calc_loss(prediction, true_y, additional_mask=None):
         weights = weights * tf.expand_dims(additional_mask, axis=0)
 
     mae_loss = tf.losses.absolute_difference(labels=true_y, predictions=prediction, weights=weights)
-    return mae_loss, mape_loss(true_y, prediction, weights), smape_loss(true_y, prediction, weights), calc_smape_rounded(true_y, prediction, weights), tf.size(true_y)
+    mse_loss = tf.losses.mean_squared_error(labels=true_y, predictions=prediction, weights=weights)
+    return mae_loss, mse_loss, mape_loss(true_y, prediction, weights), smape_loss(true_y, prediction, weights), calc_smape_rounded(true_y, prediction, weights), tf.size(true_y)
 
 def make_train_op(loss, ema_decay=None, prefix=None):
     optimizer = COCOB()
@@ -165,6 +166,7 @@ def embedding(vm_size, embedding_size, vm_id, seed):
         embeddings = tf.get_variable('fc1', [vm_size, embedding_size])
         embed = tf.nn.embedding_lookup(embeddings, vm_id)
         embed = layers.batch_norm(selu(embed))
+        embed = layers.batch_norm(selu(tf.layers.dense(embed, embedding_size, name='fc2', kernel_initializer=default_init(seed))))
     return embed
         
 class Model:
@@ -219,13 +221,13 @@ class Model:
                 self.ema.apply(ema_vars)
         else:
             if is_train:
-                self.mae, mape_loss, smape_loss, self.smape, self.loss_item_count = calc_loss(self.prediction, inp.true_y, additional_mask=loss_mask)
+                _, self.mae, mape_loss, smape_loss, self.smape, self.loss_item_count = calc_loss(self.prediction, inp.true_y, additional_mask=loss_mask)
                 # Sum all losses
                 # total_loss = smape_loss + enc_stab_loss + enc_activation_loss
                 total_loss = self.mae
                 self.train_op, self.glob_norm, self.ema = make_train_op(total_loss, asgd_decay, prefix=graph_prefix)
             else:
-                self.mae, mape_loss, smape_loss, self.smape, self.loss_item_count = calc_loss(self.prediction[:, -1], inp.true_y[:, -1], additional_mask=None)
+                _, self.mae, mape_loss, smape_loss, self.smape, self.loss_item_count = calc_loss(self.prediction[:, -1], inp.true_y[:, -1], additional_mask=None)
 
                 
     def default_init(self, seed_add=0):
@@ -272,8 +274,10 @@ class Model:
 
         # FC projecting layer to get single predicted value from RNN output
         def project_output(tensor):
-            return selu(tf.layers.dense(tensor, 1, name='rnn_output_proj', kernel_initializer=self.default_init()))
-
+            fc1 = selu(tf.layers.dense(tensor, 16, name='rnn_output_proj_fc1', kernel_initializer=self.default_init()))
+            return selu(tf.layers.dense(fc1, 1, name='rnn_output_proj_fc2', kernel_initializer=self.default_init()))
+            # return selu(tf.layers.dense(tensor, 1, name='rnn_output_proj', kernel_initializer=self.default_init()))
+            
         def loop_fn(time, prev_state, array_targets: tf.TensorArray, array_outputs: tf.TensorArray):
             """
             Main rnn loop

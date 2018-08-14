@@ -4,14 +4,13 @@ import re
 # Manually selected params
 params_s32 = dict(
     batch_size=20,
-    train_window=22,
+    train_window=8,
     train_skip_first=0,
-    embedding_size=32,
-    rnn_depth=32,
+    embedding_size=16,
+    rnn_depth=16,
     encoder_readout_dropout=0.4768781146510798,
-
-    encoder_rnn_layers=2,
-    decoder_rnn_layers=2,
+ 
+    encoder_rnn_layers=3,
 
     gate_dropout=0.9967589439360334, #0.9786,
     gate_activation='none',
@@ -21,16 +20,6 @@ params_s32 = dict(
     encoder_state_dropout=[0.9967589439360334, 0.9967589439360334, 0.9967589439360334],
     encoder_stability_loss=0.0,  # max 100
     encoder_activation_loss=5e-06, # max 0.001
-    
-    # decoder_state_dropout_type=['outside','outside'],
-    decoder_variational_dropout=[False, False, False],
-    decoder_input_dropout=[1.0, 1.0, 1.0],
-    decoder_output_dropout=[0.975, 1.0, 1.0],  # min 0.95
-    decoder_state_dropout=[0.99, 0.995, 0.995],  # min 0.95
-    decoder_candidate_l2=0.0,
-    decoder_gates_l2=0.0,
-    decoder_stability_loss=0.0, # max 100
-    decoder_activation_loss=5e-06,  # max 0.001
 )
 
 # Default incumbent on last smac3 search
