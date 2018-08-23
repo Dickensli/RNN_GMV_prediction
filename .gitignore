@@ -1,6 +1,7 @@
 data/
 log*
 Log*
+*.ipynb
 *.pyc
 *.out
 __pycache__/
